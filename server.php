@@ -9,7 +9,7 @@
 if($action === "get-clients"){
       fetch_clients();
 }
-// save client
+
 else if($action === "save-client") {
     $name = $_POST["name"];
     $phone = $_POST["phone"];
@@ -19,14 +19,47 @@ else if($action === "save-client") {
     $id = $_POST["id"];
 
     save_client($name, $phone, $email, $address, $notes, $id);
-}else if($action === "change-status"){
+}
+
+else if($action === "change-client-status"){
     $status = $_POST["status"];
     $id = $_POST["id"];
     change_client_status($status, $id);
 
-}else if($action === "del-client"){
+}
+
+else if($action === "del-client"){
     $id = $_POST["id"];
     del_client($id);
 }
 
+else if($action === "save-department"){
+    $name = $_POST["name"];
+    $id = $_POST["id"];
+    save_department($name, $id);
+}
+
+else if($action === "get-departments"){
+    fetch_departments();
+}
+
+else if($action === "change-department-status"){
+    $status = $_POST["status"];
+    $id = $_POST["id"];
+    change_department_status($status, $id);
+}
+
+else if($action === "del-department"){
+    $id = $_POST["id"];
+    del_department($id);
+}
+
+else if($action === "create-registry"){
+
+}
+
+else if($action === "get-registry"){
+    $fetch_option = $_POST["fetch_option"];
+    fetch_registry($fetch_option);
+}
 ?>

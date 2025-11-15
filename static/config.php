@@ -18,4 +18,6 @@
 
     /* universal variables */
     $action = $_POST['action'] ?? $_GET['action'] ?? "";
+    $fetch_option = $_GET['fetch_option'] ?? null;
+
 ?>
