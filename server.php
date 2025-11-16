@@ -54,12 +54,22 @@ else if($action === "del-department"){
     del_department($id);
 }
 
-else if($action === "create-registry"){
-
+else if($action === "get-registry"){
+    $fetch_option = $_GET["fetch_option"] ?? null;
+    fetch_registry($fetch_option);
+    
 }
 
-else if($action === "get-registry"){
-    $fetch_option = $_POST["fetch_option"];
-    fetch_registry($fetch_option);
+else if($action === "save-registry"){
+    $ref_no = $_POST["ref_no"];
+    $name = $_POST["name"];
+    $description = $_POST["description"];
+    $type = $_POST["type"];
+    $image = null;
+    if (isset($_FILES["image"]) && $_FILES["image"]["error"] === UPLOAD_ERR_OK) {
+        $image = $_FILES["image"];
+    }
+
+    create_registry($ref_no, $name, $description, $type, $image);
 }
 ?>
