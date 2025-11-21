@@ -6,6 +6,7 @@
     require_once("static/helper_functions.php");
     include("db/functions.php");
     
+    
 if($action === "get-clients"){
       fetch_clients();
 }

@@ -304,9 +304,9 @@ function del_department($id) {
 // fetch registry
 function fetch_registry($fetch_option = null) {
     global $conn;
+    $BASE_URL = "/law_firm/static/storage"; // Web-accessible path, not filesystem path
 
     try {
-        // If you later decide to filter by fetch_option, do it here.
         $sql = "SELECT * FROM registry ORDER BY id DESC";
 
         $stmt = $conn->prepare($sql);
@@ -320,36 +320,25 @@ function fetch_registry($fetch_option = null) {
             $result = $stmt->get_result();
             $registry = $result->fetch_all(MYSQLI_ASSOC);
             
-            // Process each row
             foreach ($registry as &$row) {
                 $row['dropdown_is_hidden'] = true;
                 
-                // Check if type is "File"
                 if (isset($row['type']) && strtolower($row['type']) === "file") {
-                    // Check if the file exists
                     $filepath = BASE_FOLDER . '/' . $row['name'];
                     
                     if (file_exists($filepath)) {
-                        // Option 1: Send public URL (recommended)
-                        $row['file_url'] = BASE_URL . '/' . $row['name'];
-                        
-                        // Option 2: Or send base64 (for small files only)
-                        // $image_data = file_get_contents($filepath);
-                        // $base64 = base64_encode($image_data);
-                        // $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                        // $mime_type = finfo_file($finfo, $filepath);
-                        // finfo_close($finfo);
-                        // $row['file_data'] = "data:$mime_type;base64,$base64";
-                        
+                        $row['file_url'] = $BASE_URL . '/' . rawurlencode($row['name']);
                         $row['file_exists'] = true;
+                        $row['file_extension'] = pathinfo($row['name'], PATHINFO_EXTENSION);
                     } else {
                         $row['file_url'] = null;
                         $row['file_exists'] = false;
+                        $row['file_extension'] = null;
                     }
                 } else {
-                    // For non-file types, name is just normal text
                     $row['file_url'] = null;
                     $row['file_exists'] = false;
+                    $row['file_extension'] = null;
                 }
             }
             
@@ -370,28 +359,28 @@ function create_registry($ref_no, $name, $description, $type, $image = null){
     global $conn;
     
     try {
+        // Determine the final name (with extension for files)
+        $final_name = $name;
+        if (strtolower($type) === "file" && $image !== null && isset($image["name"])) {
+            $file_extension = pathinfo($image["name"], PATHINFO_EXTENSION);
+            if (!pathinfo($name, PATHINFO_EXTENSION) && $file_extension) {
+                $final_name = $name . '.' . $file_extension;
+            }
+        }
+        
         $sql = "INSERT INTO registry(ref_no, description, type, name) VALUES (?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             send_json_response(FALSE, "Prepare failed: " . $conn->error);
             return false;
         }
-        $stmt->bind_param('ssss', $ref_no, $description, $type, $name);
+        $stmt->bind_param('ssss', $ref_no, $description, $type, $final_name);
         if ($stmt->execute()) {
             $record_id = $stmt->insert_id;
             
-            // Check if type is "File"
             if (strtolower($type) === "file") {
-                // Handle file upload to base folder
                 if ($image !== null && isset($image["tmp_name"])) {
-                    // Get the original file extension
-                    $file_extension = pathinfo($image["name"], PATHINFO_EXTENSION);
-                    $storage_path = BASE_FOLDER . '/' . $name;
-                    
-                    // Add extension if not present in $name
-                    if (!pathinfo($name, PATHINFO_EXTENSION)) {
-                        $storage_path .= '.' . $file_extension;
-                    }
+                    $storage_path = BASE_FOLDER . '/' . $final_name;
                     
                     if (move_uploaded_file($image["tmp_name"], $storage_path)) {
                         send_json_response(TRUE, "$type Created", ["path" => $storage_path]);
@@ -402,8 +391,7 @@ function create_registry($ref_no, $name, $description, $type, $image = null){
                     send_json_response(FALSE, "No file provided for upload");
                 }
             } else {
-                // Create folder for non-file types
-                $storage_path = BASE_FOLDER . '/' . $name;
+                $storage_path = BASE_FOLDER . '/' . $final_name;
                 
                 if (!file_exists($storage_path)) {
                     if (mkdir($storage_path, 0755, true)) {
